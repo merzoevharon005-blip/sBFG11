@@ -27,6 +27,7 @@ class sBFG11(loader.Module):
         self._enabled = False
 
     async def client_ready(self, client, db):
+        # Проверяем, был ли модуль включен до перезагрузки
         state = self.db.get("sbfg11", "state", {"enabled": False, "chat_id": None, "last_run": 0})
         if state["enabled"] and state["chat_id"]:
             self._enabled = True
@@ -66,7 +67,7 @@ class sBFG11(loader.Module):
             chat_id = state["chat_id"]
             last_run = state["last_run"]
             now = int(time.time())
-            interval = 3 * 86400
+            interval = 3 * 86400 # 3 дня
             elapsed = now - last_run
 
             if last_run == 0 or elapsed >= interval:
@@ -79,7 +80,7 @@ class sBFG11(loader.Module):
                 await asyncio.sleep(wait)
 
     @loader.command
-    async def sdepcmd(self, message: Message):
+    async def sdep(self, message: Message):
         """.sdep — депозит снять/положить (включить)"""
         state = self._get_state()
         if state["enabled"]:
@@ -93,7 +94,7 @@ class sBFG11(loader.Module):
         await utils.answer(message, self.strings("enabled"))
 
     @loader.command
-    async def ddepcmd(self, message: Message):
+    async def ddep(self, message: Message):
         """.ddep — выключить"""
         state = self._get_state()
         if not state["enabled"]:
