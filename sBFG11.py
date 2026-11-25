@@ -1,4 +1,4 @@
-# meta developer: @sBFG11
+# meta developer: @codoxoh
 # scope: hikka_only
 
 from .. import loader, utils
@@ -15,8 +15,8 @@ class sBFG11(loader.Module):
     """Авто-отправка сообщений для депозита раз в 3 дня"""
     strings = {
         "name": "sBFG11",
-        "enabled": "✅ Авто-отправка включена! Буду отправлять сообщения раз в 3 дня.",
-        "disabled": "🛑 Авто-отправка выключена.",
+        "enabled": "✅ <b>Авто-отправка включена!</b>\nБуду отправлять сообщения раз в 3 дня в этот чат.",
+        "disabled": "🛑 <b>Авто-отправка выключена.</b>",
         "already_enabled": "⚠️ Уже включено.",
         "not_enabled": "⚠️ Авто-отправка не была включена.",
     }
@@ -27,9 +27,9 @@ class sBFG11(loader.Module):
         self._enabled = False
 
     async def client_ready(self, client, db):
-        # Проверяем, был ли модуль включен до перезагрузки
-        state = self.db.get("sbfg11", "state", {"enabled": False, "chat_id": None, "last_run": 0})
-        if state["enabled"] and state["chat_id"]:
+        self.db = db
+        state = self._get_state()
+        if state.get("enabled") and state.get("chat_id"):
             self._enabled = True
             self._chat_id = state["chat_id"]
             if not self._task or self._task.done():
@@ -43,7 +43,6 @@ class sBFG11(loader.Module):
 
     async def _send_pair(self, chat_id):
         try:
-            # Отправляем напрямую через клиент, без utils
             await self._client(SendMessageRequest(
                 peer=chat_id,
                 message="депозит снять всё",
@@ -63,10 +62,10 @@ class sBFG11(loader.Module):
     async def _loop(self):
         while self._enabled:
             state = self._get_state()
-            if not state["enabled"]:
+            if not state.get("enabled"):
                 break
             chat_id = state["chat_id"]
-            last_run = state["last_run"]
+            last_run = state.get("last_run", 0)
             now = int(time.time())
             interval = 3 * 86400 # 3 дня
             elapsed = now - last_run
@@ -80,28 +79,27 @@ class sBFG11(loader.Module):
                 wait = interval - elapsed
                 await asyncio.sleep(wait)
 
-    @loader.command
+    # Обрати внимание на @loader.command(args=True)
+    @loader.command(args=True)
     async def sdep(self, message: Message):
         """.sdep — включить авто-отправку"""
         state = self._get_state()
-        if state["enabled"]:
-            # Используем message.edit вместо utils.answer
-            await message.edit(self.strings("already_enabled"))
+        if state.get("enabled"):
+            await utils.answer(message, self.strings("already_enabled"))
             return
         state = {"enabled": True, "chat_id": message.chat_id, "last_run": 0}
         self._set_state(state)
         self._enabled = True
         self._chat_id = message.chat_id
         self._task = asyncio.create_task(self._loop())
-        # Используем message.edit вместо utils.answer
-        await message.edit(self.strings("enabled"))
+        await utils.answer(message, self.strings("enabled"))
 
-    @loader.command
+    @loader.command(args=True)
     async def ddep(self, message: Message):
         """.ddep — выключить"""
         state = self._get_state()
-        if not state["enabled"]:
-            await message.edit(self.strings("not_enabled"))
+        if not state.get("enabled"):
+            await utils.answer(message, self.strings("not_enabled"))
             return
         self._enabled = False
         if self._task:
@@ -109,4 +107,4 @@ class sBFG11(loader.Module):
             self._task = None
         state["enabled"] = False
         self._set_state(state)
-        await message.edit(self.strings("disabled"))
+        await utils.answer(message, self.strings("disabled"))
