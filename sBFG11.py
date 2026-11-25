@@ -76,6 +76,7 @@ class sBFG11(loader.Module):
                 wait = interval - elapsed
                 await asyncio.sleep(wait)
 
+    @loader.on_load
     async def _restore_on_load(self):
         """Восстановить цикл после перезагрузки модуля/бота"""
         state = await self._get_state()
