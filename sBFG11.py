@@ -7,7 +7,7 @@ from herokutl.tl.types import Message
 import asyncio
 import time
 import logging
-import random  # Добавили для генерации ID
+import random  # <--- Импортируем random
 
 logger = logging.getLogger(__name__)
 
@@ -44,17 +44,17 @@ class sBFG11(loader.Module):
 
     async def _send_pair(self, chat_id):
         try:
-            # Используем стандартный random.randint для ID
+            # ИСПОЛЬЗУЕМ ЧИСТЫЙ RANDOM ВМЕСТО UTILS
             await self._client(SendMessageRequest(
                 peer=chat_id,
                 message="депозит снять всё",
-                random_id=random.randint(1, 2**63 - 1)
+                random_id=random.randint(1, 999999999999)
             ))
             await asyncio.sleep(1)
             await self._client(SendMessageRequest(
                 peer=chat_id,
                 message="депозит положить всё",
-                random_id=random.randint(1, 2**63 - 1)
+                random_id=random.randint(1, 999999999999)
             ))
             return True
         except Exception as e:
