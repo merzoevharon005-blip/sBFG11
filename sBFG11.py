@@ -19,8 +19,6 @@ class sBFG11(loader.Module):
         "disabled": "🛑 <b>Авто-отправка выключена.</b>",
         "already_enabled": "⚠️ Уже включено.",
         "not_enabled": "⚠️ Авто-отправка не была включена.",
-        "sdep_doc": "Включает авто-отправку. Бот будет раз в 3 дня отправлять 'депозит снять всё' и сразу 'депозит положить всё'.",
-        "ddep_doc": "Выключает авто-отправку сообщений для депозита."
     }
 
     def __init__(self):
@@ -29,19 +27,18 @@ class sBFG11(loader.Module):
         self._enabled = False
 
     async def client_ready(self, client, db):
-        """Вызывается Heroku после загрузки модуля для восстановления состояния"""
-        state = await self._get_state()
+        state = self.db.get("sbfg11", "state", {"enabled": False, "chat_id": None, "last_run": 0})
         if state["enabled"] and state["chat_id"]:
             self._enabled = True
             self._chat_id = state["chat_id"]
             if not self._task or self._task.done():
                 self._task = asyncio.create_task(self._loop())
 
-    async def _get_state(self):
-        return await self.db.get("sbfg11", "state", {"enabled": False, "chat_id": None, "last_run": 0})
+    def _get_state(self):
+        return self.db.get("sbfg11", "state", {"enabled": False, "chat_id": None, "last_run": 0})
 
-    async def _set_state(self, state):
-        await self.db.set("sbfg11", "state", state)
+    def _set_state(self, state):
+        self.db.set("sbfg11", "state", state)
 
     async def _send_pair(self, chat_id):
         try:
@@ -63,19 +60,19 @@ class sBFG11(loader.Module):
 
     async def _loop(self):
         while self._enabled:
-            state = await self._get_state()
+            state = self._get_state()
             if not state["enabled"]:
                 break
             chat_id = state["chat_id"]
             last_run = state["last_run"]
             now = int(time.time())
-            interval = 3 * 86400  # 3 дня
+            interval = 3 * 86400
             elapsed = now - last_run
 
             if last_run == 0 or elapsed >= interval:
                 await self._send_pair(chat_id)
                 state["last_run"] = now
-                await self._set_state(state)
+                self._set_state(state)
                 await asyncio.sleep(interval)
             else:
                 wait = interval - elapsed
@@ -84,12 +81,12 @@ class sBFG11(loader.Module):
     @loader.command
     async def sdepcmd(self, message: Message):
         """.sdep — депозит снять/положить (включить)"""
-        state = await self._get_state()
+        state = self._get_state()
         if state["enabled"]:
             await utils.answer(message, self.strings("already_enabled"))
             return
         state = {"enabled": True, "chat_id": message.chat_id, "last_run": 0}
-        await self._set_state(state)
+        self._set_state(state)
         self._enabled = True
         self._chat_id = message.chat_id
         self._task = asyncio.create_task(self._loop())
@@ -98,7 +95,7 @@ class sBFG11(loader.Module):
     @loader.command
     async def ddepcmd(self, message: Message):
         """.ddep — выключить"""
-        state = await self._get_state()
+        state = self._get_state()
         if not state["enabled"]:
             await utils.answer(message, self.strings("not_enabled"))
             return
@@ -107,5 +104,5 @@ class sBFG11(loader.Module):
             self._task.cancel()
             self._task = None
         state["enabled"] = False
-        await self._set_state(state)
+        self._set_state(state)
         await utils.answer(message, self.strings("disabled"))
