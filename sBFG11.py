@@ -7,6 +7,7 @@ from herokutl.tl.types import Message
 import asyncio
 import time
 import logging
+import random  # Добавили для генерации ID
 
 logger = logging.getLogger(__name__)
 
@@ -43,16 +44,17 @@ class sBFG11(loader.Module):
 
     async def _send_pair(self, chat_id):
         try:
+            # Используем стандартный random.randint для ID
             await self._client(SendMessageRequest(
                 peer=chat_id,
                 message="депозит снять всё",
-                random_id=utils.get_random_id()
+                random_id=random.randint(1, 2**63 - 1)
             ))
             await asyncio.sleep(1)
             await self._client(SendMessageRequest(
                 peer=chat_id,
                 message="депозит положить всё",
-                random_id=utils.get_random_id()
+                random_id=random.randint(1, 2**63 - 1)
             ))
             return True
         except Exception as e:
@@ -79,7 +81,6 @@ class sBFG11(loader.Module):
                 wait = interval - elapsed
                 await asyncio.sleep(wait)
 
-    # ИСПОЛЬЗУЕМ args=True В ДЕКОРАТОРЕ!
     @loader.command(args=True)
     async def sdep(self, message: Message):
         """.sdep — депозит снять/положить (включить)"""
