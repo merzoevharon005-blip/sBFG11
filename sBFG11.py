@@ -1,4 +1,4 @@
-# meta developer: @codoxoh
+# meta developer: @sBFG11
 # scope: hikka_only
 
 from .. import loader, utils
@@ -79,9 +79,10 @@ class sBFG11(loader.Module):
                 wait = interval - elapsed
                 await asyncio.sleep(wait)
 
-    # Обрати внимание на @loader.command(args=True)
-    @loader.command(args=True)
-    async def sdep(self, message: Message):
+    # Обрати внимание: здесь мы принудительно указываем, что это команда,
+    # и добавляем параметр для приема аргументов, чтобы ядро не тупило.
+    @loader.command
+    async def sdep(self, message: Message, args: str = None):
         """.sdep — включить авто-отправку"""
         state = self._get_state()
         if state.get("enabled"):
@@ -94,8 +95,8 @@ class sBFG11(loader.Module):
         self._task = asyncio.create_task(self._loop())
         await utils.answer(message, self.strings("enabled"))
 
-    @loader.command(args=True)
-    async def ddep(self, message: Message):
+    @loader.command
+    async def ddep(self, message: Message, args: str = None):
         """.ddep — выключить"""
         state = self._get_state()
         if not state.get("enabled"):
