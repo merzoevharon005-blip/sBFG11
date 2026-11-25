@@ -15,7 +15,7 @@ class sBFG11(loader.Module):
     """Авто-отправка сообщений для депозита раз в 3 дня"""
     strings = {
         "name": "sBFG11",
-        "enabled": "✅ <b>Авто-отправка включена!</b>\nБуду отправлять сообщения раз в 3 дня в этот чат.",
+        "enabled": "✅ <b>Авто-отправка включена!</b>\nБуду отправлять «депозит снять всё» и «депозит положить всё» раз в 3 дня в этот чат.",
         "disabled": "🛑 <b>Авто-отправка выключена.</b>",
         "already_enabled": "⚠️ Уже включено.",
         "not_enabled": "⚠️ Авто-отправка не была включена.",
@@ -67,7 +67,7 @@ class sBFG11(loader.Module):
             chat_id = state["chat_id"]
             last_run = state.get("last_run", 0)
             now = int(time.time())
-            interval = 3 * 86400 # 3 дня
+            interval = 3 * 86400  # 3 дня
             elapsed = now - last_run
 
             if last_run == 0 or elapsed >= interval:
@@ -79,11 +79,10 @@ class sBFG11(loader.Module):
                 wait = interval - elapsed
                 await asyncio.sleep(wait)
 
-    # Обрати внимание: здесь мы принудительно указываем, что это команда,
-    # и добавляем параметр для приема аргументов, чтобы ядро не тупило.
-    @loader.command
-    async def sdep(self, message: Message, args: str = None):
-        """.sdep — включить авто-отправку"""
+    # ИСПОЛЬЗУЕМ args=True В ДЕКОРАТОРЕ!
+    @loader.command(args=True)
+    async def sdep(self, message: Message):
+        """.sdep — депозит снять/положить (включить)"""
         state = self._get_state()
         if state.get("enabled"):
             await utils.answer(message, self.strings("already_enabled"))
@@ -95,8 +94,8 @@ class sBFG11(loader.Module):
         self._task = asyncio.create_task(self._loop())
         await utils.answer(message, self.strings("enabled"))
 
-    @loader.command
-    async def ddep(self, message: Message, args: str = None):
+    @loader.command(args=True)
+    async def ddep(self, message: Message):
         """.ddep — выключить"""
         state = self._get_state()
         if not state.get("enabled"):
